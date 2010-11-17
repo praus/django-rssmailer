@@ -3,7 +3,7 @@ from django.core.mail import send_mail
 
 from ..models import Email
 
-@task(ignore_result=True, name="rssmailer.tasks.send")
+@task(ignore_result=True, name="rssmailer.tasks.mail.send")
 def send(entry, **kwargs):
     logger = send.get_logger(**kwargs)
     logger.info("Sending entry: %s" % entry.title)
@@ -16,8 +16,8 @@ def send(entry, **kwargs):
         send_entry_to.delay(entry.title, entry.summary, recipients)
 
 
-@task(ignore_result=True, name="rssmailer.tasks.send_entry_to")
+@task(ignore_result=True, name="rssmailer.tasks.mail.send_entry_to")
 def send_entry_to(title, body, recipients, **kwargs):
     logger = send.get_logger(**kwargs)
     logger.info("Sending to: %s" % ','.join(recipients))
-    send_mail(title, body, "rssmailer@praus.net", recipients) 
+    send_mail(title, body, "rssmailer@praus.net", recipients)

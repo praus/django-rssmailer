@@ -11,7 +11,7 @@ from mail import send
 
 # RSS spec: http://cyber.law.harvard.edu/rss/rss.html
 
-@task(ignore_result=True, name="rssmailer.tasks.update_feeds")
+@task(ignore_result=True, name="rssmailer.tasks.feeder.update_feeds")
 def update_feeds():
     channels = Channel.objects.all()
     for chan in channels:
