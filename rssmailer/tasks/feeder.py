@@ -2,16 +2,16 @@ from datetime import datetime
 from itertools import takewhile, ifilter
 import hashlib
 import pdb
-
+from celery.decorators import task
 from celery.decorators import periodic_task
 import feedparser
 
-from models import Channel
-from tasks import send
+from ..models import Channel
+from mail import send
 
 # RSS spec: http://cyber.law.harvard.edu/rss/rss.html
 
-#@periodic_task()
+@task(ignore_result=True, name="rssmailer.tasks.update_feeds")
 def update_feeds():
     channels = Channel.objects.all()
     for chan in channels:
