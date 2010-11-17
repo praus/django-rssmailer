@@ -1,15 +1,22 @@
 from celery.decorators import task
+from django.core.mail import send_mail
+
 from models import Email
 
 @task
 def send(entry, **kwargs):
     logger = send.get_logger(**kwargs)
     logger.info("Sending entry: %s" % entry.title)
-    emails = Email.objects.all()
-    for em in emails:
-        send_entry_to.delay(entry.title, title.summary, em.email)
+    
+    emails_all = Email.objects.all()
+    step = 3  # how many recipients in one mail
+    
+    for i in range(0, len(emails_all), step):
+        recipients = map(lambda e: e.email, emails_all[i:i+step])
+        send_entry_to.delay(entry.title, entry.summary, recipients)
 
 @task
-def send_entry_to(title, content, email):
-    logger = add.get_logger(**kwargs)
-    logger.info("Sending to: %s" % email)
+def send_entry_to(title, body, recipients, **kwargs):
+    logger = send.get_logger(**kwargs)
+    logger.info("Sending to: %s" % ','.join(recipients))
+    send_mail(title, body, "rssmailer@praus.net", recipients) 
