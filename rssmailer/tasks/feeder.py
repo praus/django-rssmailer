@@ -1,15 +1,20 @@
-from datetime import datetime
-from itertools import takewhile, ifilter
 import hashlib
-import pdb
+import logging
+from datetime import datetime
+from itertools import ifilter
+
 from celery.decorators import task
 from celery.decorators import periodic_task
+from django.conf import settings
+
 import feedparser
 
-from ..models import Channel
+from ..models import Channel, EntriesSeen
 from mail import send
 
 # RSS spec: http://cyber.law.harvard.edu/rss/rss.html
+
+logger = logging.getLogger(__name__)
 
 @task(ignore_result=True, name="rssmailer.tasks.feeder.update_feeds")
 def update_feeds():
@@ -27,49 +32,62 @@ def check_feed(channel):
     feed = feedparser.parse(
         channel.url, etag=channel.etag, modified=modified_header)
     
-    if feed.status == 200: # feed updated
-        new_entries = matcher(channel.last_item_seen, feed.entries)
-        
+    if feed.status == 200 and feed.has_key("entries"): # feed updated 
+        new_entries = matcher(feed.entries)
         if not new_entries:
-            print "No new entries on %s" % feed.url
+            logger.debug("No new entries on %s" % feed.url)
             return
         
-        for entry in new_entries:
+        logger.debug("[%s] has %d new entries" % (feed.url, len(new_entries)))
+        
+        for entry in map(lambda e: e[1], new_entries):
             send.delay(entry)
         
         channel.etag = feed.get('etag', None)
-        
         m = feed.get('modified', None)
         if m:
             channel.modified = datetime(*m[:6])
-            
         channel.save()
         
-        # update last item seen
-        try:
-            channel.last_item_seen = hasher(feed.entries[0])
-            channel.save()
-        except IndexError:
-            print "Feed does not have any items!"
+        # update seen items
+        for hash in map(lambda e: e[0], new_entries):
+            e = EntriesSeen(hash)
+            e.save()
+
         
     elif feed.status == 304: # not modified
-        print "Not modified"
+        logger.info("Feed [%s] Not-modified" % feed.url)
     else: # some error code or redirection
-        print "Error"
+        logger.warning("Unexpected error, status: %d" % feed.status)
 
     
-def matcher(last_item_seen, entries):
+def matcher(entries):
     """
-    This function attempts to identify last item seen in the feed and
-    subsequently returns newer items (in terms of order of appearance,not date!).
-    """    
-    return list(takewhile(lambda x: hasher(x) != last_item_seen, entries))
+    Matches hashes of the entries against seen hashes stored in database and
+    returns list of new entries (whose hashes were not found in database).
+    """
+    current_entries_hash = map(hasher, entries)
+    
+    seen_hashes = EntriesSeen.objects.filter(hash__in=current_entries_hash)
+    seen_hashes = map(lambda e: e.hash, seen_hashes)
+    
+    current_entries = zip(current_entries_hash, entries)
+    new_entries = ifilter(lambda e: e[0] not in seen_hashes, current_entries)
+    
+    return list(new_entries)
     
 
 def hasher(entry):
-    """Returns hash representing the given entry."""
-    # TODO: make criteria configurable
-    criteria = ['title', 'description', 'guid', 'updated']
+    """
+    Returns hash representing the given entry.
+    
+    >>> entry = {"title": "foo", "description": "bar"}
+    >>> hasher(entry)
+    '3858f62230ac3c915f300c664312c63f'
+    """
+
+    criteria = getattr(settings, "RSSMAILER_UNIQUENESS",
+                       ['title', 'description', 'guid', 'updated'])
     
     # Filter out criteria that cannot be used because they're missing
     criteria = ifilter(lambda c: entry.has_key(c), criteria)

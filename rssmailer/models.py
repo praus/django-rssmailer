@@ -1,5 +1,8 @@
 from django.db import models
 
+class EntriesSeen(models.Model):
+    hash = models.CharField(max_length=255, primary_key=True)
+
 class Channel(models.Model):
     '''Model for channels to crawl.'''
     url = models.URLField(max_length=255)
