@@ -24,7 +24,11 @@ def update_feeds():
         check_feed(chan)
 
 def check_feed(channel):
-    """Checks whether the given feed (channel) has new entries."""
+    """
+    Checks whether the given feed (channel) has new entries. We need to send
+    ETag and If-Modified-Since headers, so the remote server can reply with
+    status code 304, Not Modified. This saves a *lot* of bandwidth.
+    """
     
     modified_header = None
     if channel.modified:
@@ -61,7 +65,7 @@ def check_feed(channel):
     elif feed.status == 304: # not modified
         logger.info("Feed [%s] Not-modified" % feed.url)
     else: # some error code or redirection
-        logger.warning("Unexpected error, status: %d" % feed.status)
+        logger.critical("Unexpected error, status: %d" % feed.status)
 
     
 def matcher(entries):
