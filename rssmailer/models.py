@@ -9,7 +9,6 @@ class Channel(models.Model):
     url = models.URLField(max_length=255)
     modified = models.DateTimeField(null=True, editable=False)
     etag = models.CharField(max_length=255, null=True, editable=False)
-    last_item_seen = models.CharField(max_length=255, editable=False, null=True)
     
     def __unicode__(self):
         return self.url
