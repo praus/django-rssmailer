@@ -104,8 +104,13 @@ def hasher(entry):
     criteria = ifilter(lambda c: entry.has_key(c), criteria)
     
     hash = ""
-    for cr in criteria:
-        hash += entry[cr]
+    guid_only = getattr(settings, "RSSMAILER_GUID_ONLY", True)
+    
+    if guid_only and entry.has_key('guid'):
+        hash = entry['guid']
+    else:
+        for cr in criteria:
+            hash += entry[cr]
     
     return hashlib.md5(hash.encode('utf-8')).hexdigest()
     
