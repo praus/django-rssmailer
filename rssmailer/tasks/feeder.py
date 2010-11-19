@@ -24,7 +24,7 @@ def update_feeds():
         check_feed(chan)
 
 def check_feed(channel):
-    """Checks whether the given feed has new entries."""
+    """Checks whether the given feed (channel) has new entries."""
     
     modified_header = None
     if channel.modified:
@@ -33,7 +33,8 @@ def check_feed(channel):
     feed = feedparser.parse(
         channel.url, etag=channel.etag, modified=modified_header)
     
-    if feed.status == 200 and feed.has_key("entries"): # feed updated 
+    if feed.status == 200 and feed.has_key("entries"):
+        # feed updated (or the server does not supports headers If-Modified etc. 
         new_entries = matcher(feed.entries)
         if not new_entries:
             logger.info("No new entries on %s" % feed.url)
