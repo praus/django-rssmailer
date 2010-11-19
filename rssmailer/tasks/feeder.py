@@ -23,19 +23,26 @@ def update_feeds():
     for chan in channels:
         check_feed(chan)
 
-def check_feed(channel):
+
+def get_feed(url, etag, modified):
+    return feedparser.parse(url, etag, modified)
+
+def send_new_entries(new_entries):
+    for entry in map(lambda e: e[1], new_entries):
+        consumer = getattr(settings, "RSSMAILER_CONSUMER", "rssmailer.tasks.mail.send")
+        send_task(consumer, args=[entry,])
+
+def check_feed(channel, feed_getter=get_feed, send_to_consumer=send_new_entries):
     """
     Checks whether the given feed (channel) has new entries. We need to send
     ETag and If-Modified-Since headers, so the remote server can reply with
     status code 304, Not Modified. This saves a *lot* of bandwidth.
     """
-    
     modified_header = None
     if channel.modified:
         modified_header = channel.modified.timetuple()
     
-    feed = feedparser.parse(
-        channel.url, etag=channel.etag, modified=modified_header)
+    feed = feed_getter(channel.url, etag=channel.etag, modified=modified_header)
     
     if feed.status == 200 and feed.has_key("entries"):
         # feed updated (or the server does not supports headers If-Modified etc. 
@@ -46,9 +53,7 @@ def check_feed(channel):
         
         logger.info("[%s] has %d new entries" % (feed.url, len(new_entries)))
         
-        for entry in map(lambda e: e[1], new_entries):
-            consumer = getattr(settings, "RSSMAILER_CONSUMER", "rssmailer.tasks.mail.send")
-            send_task(consumer, args=[entry,])
+        send_to_consumer(new_entries)
         
         channel.etag = feed.get('etag', None)
         m = feed.get('modified', None)
@@ -61,7 +66,6 @@ def check_feed(channel):
             e = EntryHash(hash)
             e.save()
 
-        
     elif feed.status == 304: # not modified
         logger.info("Feed [%s] Not-modified" % feed.url)
     else: # some error code or redirection
