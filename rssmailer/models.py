@@ -1,6 +1,7 @@
 from django.db import models
 
-class EntriesSeen(models.Model):
+class EntryHash(models.Model):
+    '''Model for storing hashes of seen entries.'''
     hash = models.CharField(max_length=255, primary_key=True)
 
 class Channel(models.Model):

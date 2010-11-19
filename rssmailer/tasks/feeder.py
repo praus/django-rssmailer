@@ -5,11 +5,12 @@ from itertools import ifilter
 
 from celery.decorators import task
 from celery.decorators import periodic_task
+from celery.execute import send_task
 from django.conf import settings
 
 import feedparser
 
-from ..models import Channel, EntriesSeen
+from ..models import Channel, EntryHash
 from mail import send
 
 # RSS spec: http://cyber.law.harvard.edu/rss/rss.html
@@ -51,7 +52,7 @@ def check_feed(channel):
         
         # update seen items
         for hash in map(lambda e: e[0], new_entries):
-            e = EntriesSeen(hash)
+            e = EntryHash(hash)
             e.save()
 
         
@@ -68,7 +69,7 @@ def matcher(entries):
     """
     current_entries_hash = map(hasher, entries)
     
-    seen_hashes = EntriesSeen.objects.filter(hash__in=current_entries_hash)
+    seen_hashes = EntryHash.objects.filter(hash__in=current_entries_hash)
     seen_hashes = map(lambda e: e.hash, seen_hashes)
     
     current_entries = zip(current_entries_hash, entries)
