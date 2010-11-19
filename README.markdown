@@ -64,9 +64,14 @@ Therefore we can't rely solely on ID.
 Which task should consume new entries? It has to be a Celery task (annotated or inherited from `Task`)
     RSSMAILER_CONSUMER = "rssmailer.tasks.mail.send"
     
+Entries in RSS feeds often change their content because of changes in their
+corresponding articles/posts/etc on site. This setting will avoid sending
+multiple changes if the change in the entry is not in it's id but for example
+in the summary or title.
+    RSSMAILER_GUID_ONLY = True
+    
 
 TODO
 ====
 - use Bcc while sending one email to multiple recipients
-- consider using only guid for entry identification if it exists
 
