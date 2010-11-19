@@ -42,7 +42,8 @@ def check_feed(channel):
         logger.info("[%s] has %d new entries" % (feed.url, len(new_entries)))
         
         for entry in map(lambda e: e[1], new_entries):
-            send.delay(entry)
+            consumer = getattr(settings, "RSSMAILER_CONSUMER", "rssmailer.tasks.mail.send")
+            send_task(consumer, args=[entry,])
         
         channel.etag = feed.get('etag', None)
         m = feed.get('modified', None)
