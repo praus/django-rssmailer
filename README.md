@@ -64,3 +64,8 @@ Which task should consume new entries? It has to be a Celery task (annotated, or
     RSSMAILER_CONSUMER = "rssmailer.tasks.mail.send"
     
 
+TODO
+====
+- use Bcc while sending one email to multiple recipients
+- consider using just guid for entry identification while it exists
+
