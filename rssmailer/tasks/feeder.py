@@ -36,10 +36,10 @@ def check_feed(channel):
     if feed.status == 200 and feed.has_key("entries"): # feed updated 
         new_entries = matcher(feed.entries)
         if not new_entries:
-            logger.debug("No new entries on %s" % feed.url)
+            logger.info("No new entries on %s" % feed.url)
             return
         
-        logger.debug("[%s] has %d new entries" % (feed.url, len(new_entries)))
+        logger.info("[%s] has %d new entries" % (feed.url, len(new_entries)))
         
         for entry in map(lambda e: e[1], new_entries):
             send.delay(entry)
