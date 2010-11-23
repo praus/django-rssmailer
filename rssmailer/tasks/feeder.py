@@ -1,7 +1,6 @@
 import hashlib
 import logging
 from datetime import datetime
-from itertools import ifilter
 
 from celery.decorators import task
 from celery.decorators import periodic_task
@@ -83,9 +82,9 @@ def matcher(entries):
     seen_hashes = map(lambda e: e.hash, seen_hashes)
     
     current_entries = zip(current_entries_hash, entries)
-    new_entries = ifilter(lambda e: e[0] not in seen_hashes, current_entries)
+    new_entries = filter(lambda e: e[0] not in seen_hashes, current_entries)
     
-    return list(new_entries)
+    return new_entries
     
 
 def hasher(entry):
@@ -101,7 +100,7 @@ def hasher(entry):
                        ['title', 'description', 'guid', 'updated'])
     
     # Filter out criteria that cannot be used because they're missing
-    criteria = ifilter(lambda c: entry.has_key(c), criteria)
+    criteria = filter(lambda c: entry.has_key(c), criteria)
     
     hash = ""
     guid_only = getattr(settings, "RSSMAILER_GUID_ONLY", True)
